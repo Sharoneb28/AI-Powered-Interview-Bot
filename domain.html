@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Select Domain</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="container">
+<div class="card">
+
+<h2>Select Domain</h2>
+
+<div class="grid-3">
+
+<div class="domain-card" data-domain="Software">Software</div>
+<div class="domain-card" data-domain="Data Science">Data Science</div>
+<div class="domain-card" data-domain="Web">Web</div>
+<div class="domain-card" data-domain="Mobile">Mobile</div>
+<div class="domain-card" data-domain="DevOps">DevOps</div>
+<div class="domain-card" data-domain="Cyber">Cybersecurity</div>
+
+</div>
+
+<button id="saveBtn" class="btn-primary full">Save</button>
+
+</div>
+</div>
+
+<script>
+let selected=null;
+
+const cards=document.querySelectorAll(".domain-card");
+
+cards.forEach(card=>{
+card.addEventListener("click",function(){
+cards.forEach(c=>c.classList.remove("active"));
+this.classList.add("active");
+selected=this.dataset.domain;
+});
+});
+
+document.getElementById("saveBtn").onclick=function(){
+if(!selected){alert("Select domain");return;}
+localStorage.setItem("domain",selected);
+window.location.href="interview.html";
+};
+</script>
+
+</body>
+</html>

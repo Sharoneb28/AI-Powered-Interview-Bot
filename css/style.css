@@ -1,0 +1,187 @@
+/* ============================= */
+/* GLOBAL RESET */
+/* ============================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:#eef1f7;
+    padding:40px;
+}
+
+/* ============================= */
+/* LAYOUT */
+/* ============================= */
+
+.container{
+    max-width:1200px;
+    margin:auto;
+}
+
+.card{
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 10px 25px rgba(0,0,0,0.05);
+    margin-bottom:25px;
+}
+
+.center{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:90vh;
+}
+
+.grid-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:20px;
+}
+
+.interview-layout{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:25px;
+}
+
+/* ============================= */
+/* INPUTS */
+/* ============================= */
+
+input, textarea{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #d1d5db;
+    margin-bottom:20px;
+    font-size:14px;
+}
+
+/* ============================= */
+/* BUTTONS */
+/* ============================= */
+
+.btn-primary{
+    background:#0f172a;
+    color:white;
+    padding:12px 20px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    margin-right:10px;
+    transition:0.3s;
+}
+
+.btn-primary:hover{
+    background:#1e293b;
+}
+
+.btn-light{
+    background:#e5e7eb;
+    padding:12px 20px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    margin-right:10px;
+    transition:0.3s;
+}
+
+.btn-light:hover{
+    background:#d1d5db;
+}
+
+.full{
+    width:100%;
+}
+
+/* ============================= */
+/* DOMAIN CARDS */
+/* ============================= */
+
+.domain-card{
+    border:1px solid #e5e7eb;
+    padding:25px;
+    border-radius:14px;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.domain-card:hover{
+    border-color:#6366f1;
+}
+
+.domain-card.active{
+    background:#e0e7ff;
+    border:2px solid #6366f1;
+}
+
+/* ============================= */
+/* VIDEO */
+/* ============================= */
+
+video{
+    width:100%;
+    border-radius:12px;
+}
+
+/* ============================= */
+/* AI AVATAR ANIMATIONS */
+/* ============================= */
+
+.avatar-container {
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:240px;
+    position:relative;
+}
+
+/* Pulse Ring */
+.avatar-container::before {
+    content:"";
+    position:absolute;
+    width:190px;
+    height:190px;
+    border-radius:50%;
+    background:rgba(99,102,241,0.15);
+    animation:pulse 3s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform:scale(0.9); opacity:0.6; }
+    50% { transform:scale(1.05); opacity:0.2; }
+    100% { transform:scale(0.9); opacity:0.6; }
+}
+
+/* Avatar Image */
+.avatar {
+    width:160px;
+    border-radius:50%;
+    z-index:2;
+    animation:float 4s ease-in-out infinite;
+    transition:0.3s ease;
+}
+
+/* Floating idle effect */
+@keyframes float {
+    0% { transform:translateY(0px); }
+    50% { transform:translateY(-8px); }
+    100% { transform:translateY(0px); }
+}
+
+/* Talking animation */
+.avatar.talking {
+    animation:talk 0.6s infinite alternate;
+    box-shadow:0 0 30px rgba(99,102,241,0.8);
+}
+
+@keyframes talk {
+    from { transform:scale(1.05); }
+    to { transform:scale(1.12); }
+}
