@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Interview</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/interview.js" defer></script>
+</head>
+<body>
+
+<div class="container interview-layout">
+
+    <!-- LEFT SIDE -->
+    <div class="card">
+
+        <h3>AI Interview Bot</h3>
+
+        <h2 id="questionText">Loading...</h2>
+        <p id="subtitle" style="color:#6366f1;"></p>
+
+        <textarea id="answerBox" rows="6" placeholder="Type your answer here..."></textarea>
+
+        <button class="btn-light" onclick="startVoice()">🎤 Voice Answer</button>
+        <button class="btn-primary" onclick="nextQ()">Next Question</button>
+        <button class="btn-primary" onclick="finishInterview()">Finish Interview</button>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+
+        <!-- AI Interviewer -->
+        <div class="card">
+            <h3>AI Interviewer</h3>
+
+            <div class="avatar-container">
+               <img src="assets/interviewer.png" id="aiAvatar" class="avatar">
+            </div>
+
+            <p id="aiStatus" style="color:#6366f1;">Preparing question...</p>
+        </div>
+
+        <!-- Candidate Camera -->
+        <div class="card">
+            <h3>Your Live Camera</h3>
+            <video id="video" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Timer -->
+        <div class="card">
+            <h3>Response Time</h3>
+            <h1 id="timer">0s</h1>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
