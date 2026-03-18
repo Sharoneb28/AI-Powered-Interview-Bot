@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Eye Contact Challenge</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a1a; color: white; text-align: center; }
+        .container { margin-top: 30px; }
+        #video-container { position: relative; display: inline-block; border: 5px solid #333; border-radius: 15px; overflow: hidden; }
+        video { transform: scaleX(-1); width: 640px; height: 480px; background: #000; }
+        canvas { position: absolute; top: 0; left: 0; transform: scaleX(-1); }
+        .stats { margin-top: 20px; font-size: 24px; }
+        .status-box { padding: 10px 20px; border-radius: 8px; display: inline-block; margin-top: 10px; min-width: 250px; }
+        .looking { background: #28a745; }
+        .not-looking { background: #dc3545; }
+        button:disabled { background: #555 !important; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎯 AI Eye Contact Tracker</h2>
+    <p>Look directly at the camera to maintain your score.</p>
+    
+    <div id="video-container">
+        <video id="input_video"></video>
+        <canvas id="output_canvas" width="640px" height="480px"></canvas>
+    </div>
+
+    <div class="stats">
+        <div>Eye Contact Score: <span id="eye-score">100</span>%</div>
+        <div id="status-text" class="status-box not-looking">Waiting for Camera...</div>
+        
+        <br><br>
+        <button id="start-btn" onclick="startTimedChallenge()" style="background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 10px; cursor: pointer; font-size: 18px; font-weight: bold;">
+            Start 1-Min Challenge
+        </button>
+    </div>
+    
+    <br><a href="/" style="color: #007bff; text-decoration: none;">← Back to Dashboard</a>
+</div>
+
+<script>
+    const videoElement = document.getElementById('input_video');
+    const canvasElement = document.getElementById('output_canvas');
+    const canvasCtx = canvasElement.getContext('2d');
+    const scoreElement = document.getElementById('eye-score');
+    const statusBox = document.getElementById('status-text');
+    const startBtn = document.getElementById('start-btn');
+
+    let score = 100;
+    let timeLeft = 60; 
+    let challengeActive = false;
+    let timerInterval;
+    let cameraReady = false;
+
+    const faceMesh = new FaceMesh({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    });
+
+    faceMesh.setOptions({
+        maxNumFaces: 1,
+        refineLandmarks: true,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+    });
+
+    faceMesh.onResults(onResults);
+
+    const camera = new Camera(videoElement, {
+        onFrame: async () => {
+            if (!cameraReady) {
+                cameraReady = true;
+                statusBox.innerText = "Camera Ready! Click Start.";
+                statusBox.style.background = "#007bff";
+            }
+            await faceMesh.send({image: videoElement});
+        },
+        width: 640,
+        height: 480
+    });
+    camera.start();
+
+    function startTimedChallenge() {
+        if (!cameraReady) {
+            alert("Please wait for the camera to initialize.");
+            return;
+        }
+        
+        challengeActive = true;
+        score = 100;
+        timeLeft = 60;
+        
+        startBtn.disabled = true;
+        startBtn.innerText = "Challenge in Progress...";
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            statusBox.innerText = `Focusing... ${timeLeft}s remaining`;
+
+            if (timeLeft <= 0) {
+                endChallenge();
+            }
+        }, 1000);
+    }
+
+    function onResults(results) {
+        if (!challengeActive) return;
+
+        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        
+        if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+            const landmarks = results.multiFaceLandmarks[0];
+            const nose = landmarks[1]; 
+            
+            const isLooking = (nose.x > 0.4 && nose.x < 0.6);
+
+            if (isLooking) {
+                statusBox.style.background = "#28a745";
+                if (score < 100) score += 0.2; 
+            } else {
+                statusBox.style.background = "#dc3545";
+                score -= 0.5; 
+            }
+            scoreElement.innerText = Math.max(0, Math.floor(score));
+        }
+    }
+
+function endChallenge() {
+    clearInterval(timerInterval);
+    challengeActive = false;
+    
+    const finalScore = Math.floor(score);
+    const improvement = finalScore - 70; // Baseline comparison
+
+    // Update Modal Content
+    document.getElementById('modal-score').innerText = finalScore;
+    document.getElementById('modal-improvement').innerText = (improvement > 0 ? '+' : '') + improvement;
+    
+    // Change Title based on performance
+    const title = document.getElementById('modal-title');
+    title.innerText = finalScore > 85 ? "Excellent Focus!" : "Session Complete";
+    title.style.color = finalScore > 85 ? "#28a745" : "#007bff";
+
+    // Show the Modal
+    document.getElementById('resultModal').style.display = 'flex';
+    
+    // Reset Button UI
+    startBtn.disabled = false;
+    startBtn.innerText = "Restart Challenge";
+    statusBox.innerText = "Camera Ready! Click Start.";
+    statusBox.style.background = "#007bff";
+}
+
+// Add this function to close the box
+function closeModal() {
+    document.getElementById('resultModal').style.display = 'none';
+}
+</script>
+<div id="resultModal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background-color:rgba(0,0,0,0.8); justify-content:center; align-items:center;">
+    <div style="background:#222; padding:30px; border-radius:15px; border: 2px solid #007bff; text-align:center; max-width:400px; width:90%; color: white;">
+        <h2 id="modal-title" style="margin-top:0;">Challenge Complete!</h2>
+        <div style="font-size: 1.2rem; margin: 20px 0;">
+            <p>Final Focus Score: <span id="modal-score" style="font-weight:bold; color:#28a745;">0</span>%</p>
+            <p>Improvement: <span id="modal-improvement" style="font-weight:bold; color:#007bff;">0</span>%</p>
+        </div>
+        <button onclick="closeModal()" style="background:#007bff; color:white; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-weight:bold;">Practice Again</button>
+    </div>
+</div>
+</body>
+</html>
