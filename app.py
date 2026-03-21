@@ -29,5 +29,62 @@ def eye_contact():
 def power_pose():
     return render_template('power_pose.html')
 
+from flask import request, jsonify
+import json
+from datetime import datetime
+
+def calculate_confidence(fluency, posture):
+    return int((0.6 * fluency) + (0.4 * posture))
+
+
+@app.route("/save_session", methods=["POST"])
+def save_session_api():
+    data = request.json
+
+    data["confidence"] = calculate_confidence(
+        data["fluency"], data["posture"]
+    )
+    data["timestamp"] = str(datetime.now())
+
+    try:
+        with open("data.json", "r") as f:
+            sessions = json.load(f)
+    except:
+        sessions = []
+
+    sessions.append(data)
+
+    with open("data.json", "w") as f:
+        json.dump(sessions, f, indent=4)
+
+    return jsonify({"status": "saved"})
+
+
+@app.route("/get_progress", methods=["GET"])
+def get_progress():
+    try:
+        with open("data.json", "r") as f:
+            sessions = json.load(f)
+    except:
+        return jsonify({"error": "No data"})
+
+    if len(sessions) < 2:
+        return jsonify({"message": "Not enough data"})
+
+    current = sessions[-1]
+    previous = sessions[-2]
+
+    improvement = {
+        "fluency": current["fluency"] - previous["fluency"],
+        "posture": current["posture"] - previous["posture"],
+        "confidence": current["confidence"] - previous["confidence"]
+    }
+
+    return jsonify({
+        "current": current,
+        "previous": previous,
+        "improvement": improvement
+    })
+
 if __name__ == '__main__':
     app.run(debug=True)

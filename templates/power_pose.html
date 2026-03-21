@@ -272,6 +272,8 @@
 <!-- ONLY showing modified JS part (rest of your HTML stays SAME) -->
 
 <script>
+let correctTime = 0;
+let totalTime = 60; // 1 min drill
 const videoElement = document.getElementById('input_video');
 const feedbackBox = document.getElementById('feedback');
 const startBtn = document.getElementById('start-btn');
@@ -389,6 +391,34 @@ function validatePosture(landmarks) {
     feedbackBox.className = `feedback-box ${valid ? 'correct' : 'incorrect'}`;
 }
 
+function sendPostureData() {
+    let postureScore = Math.round((correctTime / totalTime) * 100);
+
+    fetch("/get_progress")
+    .then(res => res.json())
+    .then(prev => {
+
+        let fluencyScore = 70; // default
+
+        if (prev.current) {
+            fluencyScore = prev.current.fluency;  // ✅ KEEP OLD VALUE
+        }
+
+        return fetch("/save_session", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                fluency: fluencyScore,
+                posture: postureScore
+            })
+        });
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error(err));
+}
 function startDrill() {
     if (!currentPose) {
         alert("Please select a pose first!");
@@ -414,6 +444,7 @@ function startDrill() {
 
         if (timeLeft <= 0) {
             clearInterval(timer);
+            sendPostureData();
             showModal();
         }
     }, 1000);
@@ -425,6 +456,21 @@ function showModal() {
 
 function closeModal() {
     window.location.href = "/";
+}
+
+function sendSessionData() {
+    const data = {
+        fluency: 70,   // you can later make dynamic
+        posture: isCorrect ? 80 : 50
+    };
+
+    fetch("/save_session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
 }
 </script>
 
