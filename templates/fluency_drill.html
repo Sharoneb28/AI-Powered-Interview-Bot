@@ -295,9 +295,32 @@ function initRapidFire() {
     }
 }
 
+function sendSessionData() {
+    let countText = document.getElementById("count-display").innerText;
+    let fillerCount = parseInt(countText.replace(/\D/g, "")) || 0;
+
+    let fluencyScore = Math.max(0, 100 - (fillerCount * 10));
+    let postureScore = 70;
+
+    fetch("/save_session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            fluency: fluencyScore,
+            posture: postureScore
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error("Error:", err));
+}
+
 function endChallenge() {
     clearInterval(timerInterval);
     if (recognition) recognition.stop();
+    sendSessionData();
 
     document.getElementById('timer-display').style.display = 'none';
     document.getElementById('progress-container').style.display = 'none';

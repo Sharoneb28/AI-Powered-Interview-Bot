@@ -4,31 +4,117 @@
     <title>STAR Method Rebuilder</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 40px; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 650px; margin: auto; }
         textarea { width: 100%; height: 80px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; padding: 10px; }
         .btn { background: #28a745; color: white; padding: 12px; border: none; width: 100%; border-radius: 6px; cursor: pointer; margin-top: 20px; font-weight: bold; }
+        .result { margin-top: 20px; padding: 15px; border-radius: 8px; background: #eef2ff; }
     </style>
 </head>
+
 <body>
-    <div class="card">
-        <h2>Structured Answer Rebuild (STAR)</h2>
-        <p><strong>Prompt:</strong> Tell me about a time you handled a difficult team member.</p>
-        
-        <label><strong>S</strong>ituation:</label>
-        <textarea placeholder="Where were you?"></textarea>
-        
-        <label><strong>T</strong>ask:</label>
-        <textarea placeholder="What was the specific problem?"></textarea>
-        
-        <label><strong>A</strong>ction:</label>
-        <textarea placeholder="What steps did YOU take?"></textarea>
-        
-        <label><strong>R</strong>esult:</label>
-        <textarea placeholder="What was the final outcome?"></textarea>
-        
-        <button class="btn" onclick="alert('Analysis Saved! Your structure score increased by 15%.')">Submit for Analysis</button>
-        <br><br>
-        <a href="/">← Back to Dashboard</a>
-    </div>
+<div class="card">
+    <h2>Structured Answer Rebuild (STAR)</h2>
+
+    <p><strong>Prompt:</strong> <span id="question"></span></p>
+
+    <label><strong>S</strong>ituation:</label>
+    <textarea id="situation"></textarea>
+
+    <label><strong>T</strong>ask:</label>
+    <textarea id="task"></textarea>
+
+    <label><strong>A</strong>ction:</label>
+    <textarea id="action"></textarea>
+
+    <label><strong>R</strong>esult:</label>
+    <textarea id="result"></textarea>
+
+    <button class="btn" onclick="submitSTAR()">Submit for Analysis</button>
+
+    <div id="analysis" class="result" style="display:none;"></div>
+
+    <br><br>
+    <a href="/">← Back to Dashboard</a>
+</div>
+
+<script>
+const questions = [
+    "Tell me about a time you handled a difficult team member.",
+    "Describe a situation where you solved a complex problem.",
+    "Tell me about a time you showed leadership.",
+    "Describe a failure and how you handled it.",
+    "Tell me about a time you worked under pressure.",
+    "Describe a time you had a conflict with a teammate."
+];
+
+// 🔥 Random question every reload
+const selectedQuestion = questions[Math.floor(Math.random() * questions.length)];
+document.getElementById("question").innerText = selectedQuestion;
+
+// 🔥 STAR ANALYSIS LOGIC
+function analyzeText(text, type) {
+    let score = 0;
+    let feedback = "";
+
+    if (text.length > 20) score += 25;
+    else feedback += `${type}: Too short. Add more detail.<br>`;
+
+    if (type === "Action" && text.toLowerCase().includes("i")) score += 25;
+    else if (type === "Action") feedback += "Action: Focus more on YOUR contribution.<br>";
+
+    if (type === "Result" && (text.includes("%") || text.toLowerCase().includes("success"))) score += 25;
+    else if (type === "Result") feedback += "Result: Add measurable outcomes.<br>";
+
+    if (text.split(" ").length > 10) score += 25;
+
+    return { score, feedback };
+}
+
+// 🔥 MAIN SUBMIT FUNCTION
+function submitSTAR() {
+    const s = document.getElementById("situation").value;
+    const t = document.getElementById("task").value;
+    const a = document.getElementById("action").value;
+    const r = document.getElementById("result").value;
+
+    let totalScore = 0;
+    let feedback = "";
+
+    const sRes = analyzeText(s, "Situation");
+    const tRes = analyzeText(t, "Task");
+    const aRes = analyzeText(a, "Action");
+    const rRes = analyzeText(r, "Result");
+
+    totalScore = sRes.score + tRes.score + aRes.score + rRes.score;
+
+    feedback += sRes.feedback + tRes.feedback + aRes.feedback + rRes.feedback;
+
+    let finalMessage = "";
+
+    if (totalScore > 70) finalMessage = "🔥 Excellent STAR structure!";
+    else if (totalScore > 40) finalMessage = "👍 Good, but can improve clarity.";
+    else finalMessage = "⚠️ Weak structure. Try expanding each section.";
+
+    // 🔥 Show result
+    const analysisBox = document.getElementById("analysis");
+    analysisBox.style.display = "block";
+    analysisBox.innerHTML = `
+        <strong>Score:</strong> ${totalScore}/100 <br><br>
+        <strong>Feedback:</strong><br> ${feedback || "Well structured answer!"}<br><br>
+        <strong>${finalMessage}</strong>
+    `;
+
+    // 🔥 SEND TO BACKEND
+    fetch("/save_session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            fluency: 70, // keep previous
+            posture: 70, // keep previous
+            star: totalScore
+        })
+    });
+}
+</script>
 </body>
 </html>

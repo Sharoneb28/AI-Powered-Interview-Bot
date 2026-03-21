@@ -116,6 +116,14 @@
             <canvas id="myChart"></canvas>
         </div>
 
+    <div class="card">
+     <h2>📈 Growth Tracker</h2>
+
+     <p>Fluency Improvement: <span id="fluency">0%</span></p>
+     <p>Posture Improvement: <span id="posture">0%</span></p>
+     <p>Confidence Growth: <span id="confidence">0%</span></p>
+    </div>
+
         <div class="card">
             <h3>Recommended Tasks</h3>
             <p style="color: #64748b; font-size: 0.9rem;">Tailored to your latest session metrics</p>
@@ -190,5 +198,31 @@
             });
         });
     </script>
+<script>
+async function loadDashboard() {
+    const res = await fetch("/get_progress");
+    const data = await res.json();
+
+    console.log(data); // 🔍 helps debug
+
+    if (!data.improvement) {
+        document.getElementById("fluency").innerText = "0%";
+        document.getElementById("posture").innerText = "0%";
+        document.getElementById("confidence").innerText = "0%";
+        return;
+    }
+
+    document.getElementById("fluency").innerText =
+        data.improvement.fluency + "%";
+
+    document.getElementById("posture").innerText =
+        data.improvement.posture + "%";
+
+    document.getElementById("confidence").innerText =
+        data.improvement.confidence + "%";
+}
+
+window.onload = loadDashboard;
+</script>
 </body>
 </html>
