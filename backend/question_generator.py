@@ -1,103 +1,52 @@
+from ai_engine import generate_ai_question
+from performance_analyzer import analyze_performance
 import random
-
-from question_bank import QUESTION_BANK
-from difficulty_adapter import adapt_difficulty
-from followup_logic import should_ask_followup
-
-
-def generate_dynamic_question(domain, difficulty, previous_question, answer, asked_questions):
-
-    templates = [
-        "You mentioned {keyword}. Can you explain how it works in {domain} systems?",
-        "How would you optimize a system that uses {keyword} in {domain}?",
-        "What challenges might occur when implementing {keyword} in {domain}?",
-        "Describe a real-world scenario where {keyword} is used in {domain}.",
-        "What are the advantages of using {keyword} in {domain} development?"
-    ]
-
-    words = [w.lower() for w in answer.split()]
-
-    ignore_words = [
-        "the","a","an","is","are","was","were","i","we","it",
-        "software","system","project","application","using"
-    ]
-
-    keywords = [w for w in words if w not in ignore_words]
-
-    if keywords:
-        keyword = random.choice(keywords)
-    else:
-        keyword = domain
-
-    # try multiple times to avoid repetition
-    for _ in range(5):
-
-        template = random.choice(templates)
-
-        question = template.format(keyword=keyword, domain=domain)
-
-        if question not in asked_questions:
-            return question
-
-    return question
-
 
 def generate_question(context, performance, answer):
 
-    # STEP 1 — Resume questions first
+    # 🔥 AUTO performance (override frontend)
+    performance = analyze_performance(answer)
+
+    # -------- RESUME QUESTIONS --------
     if context.resume_questions:
-
-        question = context.resume_questions.pop(0)
-
-        context.add_question(question)
+        q = context.resume_questions.pop(0)
+        context.add_question(q)
 
         return {
-            "question": question,
-            "domain": context.domain,
-            "difficulty": "resume",
-            "is_follow_up": False
+            "question": q,
+            "domain": "resume",
+            "difficulty": "resume"
         }
 
-    # STEP 2 — Difficulty adaptation
+    # -------- ADAPT DIFFICULTY --------
+    from difficulty_adapter import adapt_difficulty
     new_difficulty = adapt_difficulty(context.difficulty, performance)
 
-    previous_question = context.get_previous_question()
+    # -------- DOMAIN TOPIC --------
+    TOPICS = {
+        "Software": ["OOP", "API", "Database", "DSA", "System Design"],
+        "Web": ["HTML", "CSS", "JavaScript", "Frontend", "Backend"],
+        "AI": ["Machine Learning", "Neural Networks", "Data", "Models"]
+    }
 
-    try:
+    topics = TOPICS.get(context.domain, ["General"])
+    topic = random.choice(topics)
 
-        print("Generating dynamic AI-style question...")
+    # -------- FOLLOW-UP (if strong answer) --------
+    if performance == "strong" and answer:
+        question = generate_ai_question(context.domain, topic, new_difficulty, answer)
+    else:
+        question = generate_ai_question(context.domain, topic, new_difficulty)
 
-        question = generate_dynamic_question(
-            context.domain,
-            new_difficulty,
-            previous_question,
-            answer,
-            context.asked_questions
-        )
-
-    except Exception as e:
-
-        print("Generator error:", e)
-        print("Using fallback question bank")
-
-        questions = QUESTION_BANK[context.domain][new_difficulty]
-
-        available = [
-            q for q in questions if q not in context.asked_questions
-        ]
-
-        if not available:
-            context.asked_questions.clear()
-            available = questions
-
-        question = random.choice(available)
+    # -------- SAVE --------
+    if question in context.asked_questions:
+        return generate_question(context, performance, "skip")
 
     context.add_question(question)
-    context.update_difficulty(new_difficulty)
+    context.difficulty = new_difficulty
 
     return {
         "question": question,
         "domain": context.domain,
-        "difficulty": new_difficulty,
-        "is_follow_up": should_ask_followup(performance)
+        "difficulty": new_difficulty
     }
