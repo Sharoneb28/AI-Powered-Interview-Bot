@@ -2,27 +2,80 @@
 <html>
 <head>
 <title>Tasks</title>
-<link rel="stylesheet" href="css/style.css">
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #ffffff;
+        margin: 0;
+        padding: 0;
+        text-align: center;
+        color: #333;
+    }
+
+    h2 {
+        margin-top: 50px;
+        font-size: 32px;
+        color: #222;
+    }
+
+    button {
+        background: #f1f3f5;
+        color: #333;
+        border: none;
+        padding: 12px 20px;
+        margin: 10px;
+        border-radius: 8px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    button:hover {
+        background: #e0e0e0;
+        transform: translateY(-2px);
+    }
+
+    button:active {
+        transform: scale(0.95);
+    }
+
+    /* Dashboard button style */
+    button:last-of-type {
+        background: #ff6b6b;
+        color: white;
+    }
+
+    button:last-of-type:hover {
+        background: #ff3b3b;
+    }
+
+</style>
+
 </head>
+
 <body>
 
-<div class="container">
+<h2>Practice Tasks</h2>
 
-<div class="grid-3">
+<button onclick="goTask('eye_contact.html')">Eye Contact</button>
+<button onclick="goTask('fluency_drill.html')">Fluency Drill</button>
+<button onclick="goTask('power_pose.html')">Power Pose</button>
+<button onclick="goTask('star_training.html')">STAR Training</button>
 
-<div class="card">STAR Method Rebuild</div>
-<div class="card">Fluency Drill</div>
-<div class="card">Rapid Fire Round</div>
-<div class="card">Eye Contact Challenge</div>
-<div class="card">Power Pose Activation</div>
+<br><br>
+<button onclick="goDashboard()">Back to Dashboard</button>
 
-</div>
+<script>
+function goTask(page){
+    window.location.href = "./" + page;
+}
 
-<a href="growth.html">
-<button class="btn-primary full">View Growth</button>
-</a>
-
-</div>
+function goDashboard(){
+    window.location.href = "./dashboard.html";
+}
+</script>
 
 </body>
 </html>

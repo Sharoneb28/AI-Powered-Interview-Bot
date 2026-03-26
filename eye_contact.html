@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Eye Contact Challenge</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+        }
+
+        .container { margin-top: 30px; }
+
+        #video-container {
+            position: relative;
+            display: inline-block;
+            border: 5px solid #333;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        video {
+            transform: scaleX(-1);
+            width: 640px;
+            height: 480px;
+            background: #000;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: scaleX(-1);
+        }
+
+        .stats {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+
+        .status-box {
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+            min-width: 250px;
+        }
+
+        .looking { background: #28a745; }
+        .not-looking { background: #dc3545; }
+
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>🎯 AI Eye Contact Tracker</h2>
+    <p>Look directly at the camera to maintain your score.</p>
+
+    <div id="video-container">
+        <video id="input_video"></video>
+        <canvas id="output_canvas" width="640" height="480"></canvas>
+    </div>
+
+    <div class="stats">
+        <div>Eye Contact Score: <span id="eye-score">100</span>%</div>
+
+        <!-- STATUS -->
+        <div id="status-text" class="status-box not-looking">
+            Waiting for Camera...
+        </div>
+
+        <!-- ✅ NEW TIMER (FIX) -->
+        <div id="timer-text" style="margin-top:10px; font-size:18px;">
+            Time Left: 60s
+        </div>
+
+        <br><br>
+        <button id="start-btn" onclick="startChallenge()">
+            Start Challenge
+        </button>
+    </div>
+
+    <br><br>
+    <button onclick="goDashboard()">← Back to Dashboard</button>
+
+</div>
+
+<!-- RESULT MODAL -->
+<div id="resultModal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8); justify-content:center; align-items:center;">
+    <div style="background:#222; padding:30px; border-radius:15px; text-align:center;">
+        <h2 id="modal-title">Challenge Complete</h2>
+        <p>Score: <span id="modal-score"></span>%</p>
+        <button onclick="closeModal()">OK</button>
+    </div>
+</div>
+
+<script>
+
+const video = document.getElementById('input_video');
+const scoreEl = document.getElementById('eye-score');
+const statusEl = document.getElementById('status-text');
+const timerEl = document.getElementById('timer-text');
+const startBtn = document.getElementById('start-btn');
+
+let score = 100;
+let time = 60;
+let active = false;
+let timer;
+
+// ---------------- CAMERA ----------------
+const faceMesh = new FaceMesh({
+    locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+});
+
+faceMesh.setOptions({
+    maxNumFaces: 1,
+    refineLandmarks: true
+});
+
+faceMesh.onResults(results => {
+
+    if(!active) return;
+
+    if(results.multiFaceLandmarks){
+        const nose = results.multiFaceLandmarks[0][1];
+
+        if(nose.x > 0.4 && nose.x < 0.6){
+            statusEl.innerText = "Good Eye Contact";
+            statusEl.className = "status-box looking";
+            score += 0.2;
+        } else {
+            statusEl.innerText = "Looking Away";
+            statusEl.className = "status-box not-looking";
+            score -= 0.5;
+        }
+
+        score = Math.max(0, Math.min(100, score));
+        scoreEl.innerText = Math.floor(score);
+    }
+
+});
+
+// Start camera
+const camera = new Camera(video, {
+    onFrame: async () => {
+        await faceMesh.send({image: video});
+    },
+    width: 640,
+    height: 480
+});
+camera.start();
+
+// ---------------- START ----------------
+function startChallenge(){
+
+    active = true;
+    score = 100;
+    time = 60;
+
+    startBtn.disabled = true;
+
+    timer = setInterval(() => {
+        time--;
+
+        // ✅ FIX: separate timer
+        timerEl.innerText = "Time Left: " + time + "s";
+
+        if(time <= 0){
+            endChallenge();
+        }
+    },1000);
+}
+
+// ---------------- END ----------------
+function endChallenge(){
+
+    clearInterval(timer);
+    active = false;
+
+    let finalScore = Math.floor(score);
+
+    // ✅ SAVE TO sessionHistory
+    let history = JSON.parse(localStorage.getItem("sessionHistory")) || [];
+
+    history.push({
+        eye: finalScore,
+        fluency: 70,
+        posture: 70,
+        star: 60
+    });
+
+    localStorage.setItem("sessionHistory", JSON.stringify(history));
+
+    document.getElementById("modal-score").innerText = finalScore;
+    document.getElementById("resultModal").style.display = "flex";
+
+    startBtn.disabled = false;
+}
+
+// ---------------- MODAL ----------------
+function closeModal(){
+    document.getElementById("resultModal").style.display = "none";
+}
+
+// ---------------- NAVIGATION ----------------
+function goDashboard(){
+    window.location.href = "dashboard.html";
+}
+
+</script>
+
+</body>
+</html>

@@ -1,27 +1,243 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Growth</title>
-<link rel="stylesheet" href="css/style.css">
+<title>Growth Dashboard</title>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="js/growth.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f5f7fb;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:1000px;
+    margin:auto;
+}
+
+h2{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.cards{
+    display:flex;
+    gap:20px;
+    justify-content:space-between;
+    margin-bottom:30px;
+}
+
+.card{
+    flex:1;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    text-align:center;
+}
+
+.score{
+    font-size:28px;
+    font-weight:bold;
+}
+
+.green{ color:#28a745; }
+.red{ color:#dc3545; }
+.blue{ color:#007bff; }
+
+.chart-container{
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.btn{
+    margin-top:20px;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+.back-btn{
+    background:#007bff;
+    color:white;
+}
+
+.download-btn{
+    background:#28a745;
+    color:white;
+}
+</style>
+
 </head>
+
 <body>
 
 <div class="container">
 
-<div class="card">
-<h3>Current Score</h3>
-<h1 id="currentScore"></h1>
-<p>Previous: <span id="previousScore"></span></p>
-<p>Improvement: <span id="improvement"></span></p>
+<h2>📊 Your Growth Analysis</h2>
+
+<div class="cards">
+    <div class="card">
+        <h3>Current Score</h3>
+        <div id="currentScore" class="score blue">0%</div>
+    </div>
+
+    <div class="card">
+        <h3>Previous Score</h3>
+        <div id="previousScore" class="score red">0%</div>
+    </div>
+
+    <div class="card">
+        <h3>Improvement</h3>
+        <div id="improvement" class="score green">0%</div>
+    </div>
 </div>
 
-<div class="card">
-<canvas id="chart"></canvas>
+<div class="chart-container">
+    <canvas id="chart"></canvas>
 </div>
 
+<button class="btn back-btn" onclick="goDashboard()">← Back to Dashboard</button>
+<button class="btn download-btn" onclick="downloadReport()">📄 Download Report</button>
+
 </div>
+
+<script>
+
+/* ========================= */
+/* NAVIGATION */
+/* ========================= */
+
+function goDashboard(){
+    window.location.href = "dashboard.html";
+}
+
+/* ========================= */
+/* REAL DATA (LOCAL STORAGE) */
+/* ========================= */
+
+let history = JSON.parse(localStorage.getItem("sessionHistory")) || [];
+
+let latest = history[history.length - 1] || {fluency:60, posture:60, star:60};
+let previous = history[history.length - 2] || {fluency:50, posture:50, star:50};
+
+let statsData = {
+    labels: ["Fluency","Posture","STAR"],
+    previous: [previous.fluency, previous.posture, previous.star],
+    current: [latest.fluency, latest.posture, latest.star]
+};
+
+/* ========================= */
+/* SCORES */
+/* ========================= */
+
+let currentScore = Math.round(
+    statsData.current.reduce((a,b)=>a+b,0) / statsData.current.length
+);
+
+let previousScore = Math.round(
+    statsData.previous.reduce((a,b)=>a+b,0) / statsData.previous.length
+);
+
+let improvement = currentScore - previousScore;
+
+/* ========================= */
+/* UI UPDATE */
+/* ========================= */
+
+document.getElementById("currentScore").innerText = currentScore + "%";
+document.getElementById("previousScore").innerText = previousScore + "%";
+document.getElementById("improvement").innerText =
+    (improvement >= 0 ? "+" : "") + improvement + "%";
+
+/* ========================= */
+/* CHART */
+/* ========================= */
+
+new Chart(document.getElementById("chart"), {
+    type: "radar",
+    data: {
+        labels: statsData.labels,
+        datasets: [
+            { label: "Previous", data: statsData.previous },
+            { label: "Current", data: statsData.current }
+        ]
+    },
+    options: {
+        scales: { r: { beginAtZero: true, max: 100 } }
+    }
+});
+
+/* ========================= */
+/* REPORT */
+/* ========================= */
+
+function downloadReport(){
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    function getFeedback(skill, score){
+        if(score >= 80){
+            return `You handled ${skill.toLowerCase()} really well. It shows confidence and control.`;
+        }
+        else if(score >= 60){
+            return `Your ${skill.toLowerCase()} is decent, but there is room to improve consistency.`;
+        }
+        else{
+            return `Your ${skill.toLowerCase()} needs more practice. Focus on this area for better results.`;
+        }
+    }
+
+    doc.setFontSize(18);
+    doc.text("Interview Performance Report", 20, 20);
+
+    doc.setFontSize(12);
+    doc.text(`Overall Score: ${currentScore}%`, 20, 35);
+
+    doc.text(`Sessions Completed: ${history.length}`, 20, 45);
+
+    let y = 60;
+
+    for(let i=0;i<statsData.labels.length;i++){
+        let skill = statsData.labels[i];
+        let score = statsData.current[i];
+
+        doc.text(`${skill}: ${score}%`, 20, y);
+        y += 6;
+
+        doc.text(getFeedback(skill, score), 25, y);
+        y += 12;
+    }
+
+    let finalMsg = "";
+
+    if(currentScore > 80){
+        finalMsg = "You are performing strongly and ready for interviews.";
+    }
+    else if(currentScore > 60){
+        finalMsg = "You are improving well. Keep practicing consistently.";
+    }
+    else{
+        finalMsg = "You need more focused practice. Keep working on weak areas.";
+    }
+
+    doc.text("Final Feedback:", 20, y + 10);
+    doc.text(finalMsg, 20, y + 20);
+
+    doc.save("Performance_Report.pdf");
+}
+
+</script>
 
 </body>
 </html>

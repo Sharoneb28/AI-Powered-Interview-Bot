@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Power Pose Trainer - 12 Poses</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --accent: #f1c40f;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: radial-gradient(circle at top right, #1e293b, var(--bg-dark)); 
+            color: white; 
+            margin: 0; 
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 24px;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(10px);
+            padding: 30px; 
+            border-radius: 24px; 
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); 
+        }
+
+        h2 { font-weight: 800; letter-spacing: -1px; margin-top: 0; }
+
+        /* Video Container Styling */
+        #video-container { 
+            position: relative; 
+            border-radius: 16px; 
+            background: #000; 
+            overflow: hidden; 
+            aspect-ratio: 16/9;
+            border: 2px solid rgba(255,255,255,0.05);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+
+        video, canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+
+        /* Sidebar Pose Grid */
+        .pose-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        /* Custom Scrollbar */
+        .pose-grid::-webkit-scrollbar { width: 6px; }
+        .pose-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .pose-img { 
+            background: rgba(255,255,255,0.05); 
+            padding: 15px 10px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1); 
+            transition: 0.2s;
+            text-align: center;
+        }
+
+        .pose-img:hover { background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+        .active-pose { border-color: var(--accent); background: var(--accent) !important; color: #000; }
+
+        /* Overlay & UI Elements */
+        .preview-pane {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .feedback-box { 
+            font-size: 1rem; 
+            font-weight: 700; 
+            padding: 15px; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            background: rgba(255,255,255,0.05);
+            transition: 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .correct { background: var(--success); color: white; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+        .incorrect { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger); }
+
+        #timer { font-size: 4rem; font-weight: 800; color: var(--accent); margin: 10px 0; font-variant-numeric: tabular-nums; }
+
+        .btn-start { 
+            width: 100%;
+            padding: 16px; 
+            border-radius: 12px; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 800; 
+            font-size: 1.1rem; 
+            background: var(--success); 
+            color: white;
+            transition: 0.3s;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-start:disabled { background: #334155; cursor: not-allowed; box-shadow: none; opacity: 0.6; }
+
+        .calibration-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+        }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 900px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+
+        .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-box {
+    background: white;
+    color: #0f172a;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    width: 300px;
+    animation: popUp 0.4s ease;
+}
+
+.modal-box .emoji {
+    font-size: 50px;
+    margin-bottom: 10px;
+}
+
+.modal-box h2 {
+    margin: 10px 0;
+    font-weight: 800;
+}
+
+.modal-box p {
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 20px;
+}
+
+.modal-box button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #10b981;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes popUp {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+    </style>
+</head>
+<div id="completionModal" class="modal hidden">
+    <div class="modal-box">
+        <div class="emoji">🎉</div>
+        <h2>Great Job!</h2>
+        <p>Hope this helped boost your confidence 💪</p>
+        <button onclick="closeModal()">Continue</button>
+    </div>
+</div>
+
+<body>
+    <button onclick="goToDashboard()" style="
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    z-index: 99999;
+">
+    ← Dashboard
+</button>
+
+<div class="main-layout">
+    <div class="card">
+        <h2>⚡ AI Confidence Trainer</h2>
+        
+        <div id="pose-preview" class="preview-pane">
+            <h3 id="preview-title" style="margin:0; color: var(--accent);">Select a Pose</h3>
+            <p id="preview-desc" style="font-size: 0.9rem; color: #94a3b8; margin: 8px 0 0 0;">Choose a position from the list to begin your AI-guided training.</p>
+        </div>
+
+        <div id="video-container">
+            <div id="calibration-screen" class="calibration-overlay">
+                <div style="font-size: 2rem; margin-bottom: 10px;">👤</div>
+                <p style="font-weight: 800;">POSITION YOUR BODY</p>
+                <p style="font-size: 0.85rem; padding: 0 40px; color: #94a3b8;">
+                    Ensure your <b>shoulders, elbows, and wrists</b> are visible in the frame.
+                </p>
+                <div id="joint-check" style="color: var(--accent); font-size: 0.8rem; margin-top: 15px; font-weight: 600;">Detecting joints...</div>
+            </div>
+            <video id="input_video"></video>
+            <canvas id="output_canvas"></canvas>
+        </div>
+
+        <div id="feedback" class="feedback-box">Waiting for Pose Selection...</div>
+    </div>
+
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h3 style="margin-top:0; font-size: 1rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">Pose Library</h3>
+            <div id="pose-selection" class="pose-grid">
+                <div onclick="updatePreview('wonder_woman', 'The Wonder Woman', 'Hands on hips, feet hip-width apart. Increases testosterone and presence.', this)" class="pose-img">Wonder Woman</div>
+                <div onclick="updatePreview('victory', 'The Victory V', 'Arms high in a V-shape. The universal sign of triumph and pride.', this)" class="pose-img">Victory V</div>
+                <div onclick="updatePreview('superman', 'The Superman', 'Fists at waist, shoulders back, eyes on the horizon.', this)" class="pose-img">Superman</div>
+                <div onclick="updatePreview('ceo', 'The CEO', 'Hands behind head, elbows wide. Projects high status and dominance.', this)" class="pose-img">The CEO</div>
+                <div onclick="updatePreview('loomer', 'The Loomer', 'Hands on table, leaning forward. Command the room instantly.', this)" class="pose-img">The Loomer</div>
+                <div onclick="updatePreview('thinker', 'The Thinker', 'One hand on chin. Projects intellectual authority and focus.', this)" class="pose-img">The Thinker</div>
+                <div onclick="updatePreview('anchor', 'The Anchor', 'Hands locked behind back. Projects stability and calm.', this)" class="pose-img">The Anchor</div>
+                <div onclick="updatePreview('performer', 'Performer', 'Arms wide. Increases physical presence and openness.', this)" class="pose-img">Performer</div>
+                <div onclick="updatePreview('zen', 'Zen Power', 'Hands together at chest. Centers your energy and focus.', this)" class="pose-img">Zen Power</div>
+                <div onclick="updatePreview('gladiator', 'Gladiator', 'One arm across chest. Ready and defensive confidence.', this)" class="pose-img">Gladiator</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <div id="timer">01:00</div>
+            <button class="btn-start" id="start-btn" onclick="startDrill()" disabled>Start 1-Min Drill</button>
+        </div>
+    </div>
+</div>
+
+<!-- ONLY showing modified JS part (rest of your HTML stays SAME) -->
+
+<script>
+let correctTime = 0;
+let totalTime = 60; // 1 min drill
+const videoElement = document.getElementById('input_video');
+const feedbackBox = document.getElementById('feedback');
+const startBtn = document.getElementById('start-btn');
+
+let currentPose = null;
+let isCorrect = false;
+let timeLeft = 60;
+let isRunning = false;
+let timer;
+
+const pose = new Pose({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+});
+
+pose.setOptions({
+    modelComplexity: 1,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+});
+
+pose.onResults(onResults);
+
+const camera = new Camera(videoElement, {
+    onFrame: async () => {
+        await pose.send({ image: videoElement });
+    },
+    width: 640,
+    height: 360
+});
+camera.start();
+
+function updatePreview(key, title, desc, element) {
+    if (isRunning) return;
+
+    document.getElementById('preview-title').innerText = title;
+    document.getElementById('preview-desc').innerText = desc;
+
+    document.querySelectorAll('.pose-img').forEach(p => p.classList.remove('active-pose'));
+    element.classList.add('active-pose');
+
+    currentPose = key;
+    feedbackBox.innerText = "Pose ready. Click start!";
+    feedbackBox.className = "feedback-box";
+    startBtn.disabled = false;
+}
+
+function onResults(results) {
+    if (results.poseLandmarks) {
+        const landmarks = results.poseLandmarks;
+
+        const jointsToTrack = [11, 12, 13, 14, 15, 16];
+        let allVisible = jointsToTrack.every(index => landmarks[index].visibility > 0.7);
+
+        if (allVisible) {
+            document.getElementById('calibration-screen').classList.add('hidden');
+            validatePosture(landmarks);
+        } else {
+            document.getElementById('calibration-screen').classList.remove('hidden');
+            document.getElementById('joint-check').innerText =
+                "Ensure shoulders, elbows, and wrists are visible.";
+
+            feedbackBox.innerText = "⚠️ Adjust your position in camera";
+            feedbackBox.className = "feedback-box incorrect";
+        }
+    }
+}
+
+function validatePosture(landmarks) {
+    if (!currentPose || !isRunning) return;
+
+    const lWrist = landmarks[15], rWrist = landmarks[16];
+    const lHip = landmarks[23], rHip = landmarks[24];
+    const nose = landmarks[0];
+    const lShoulder = landmarks[11], rShoulder = landmarks[12];
+
+    let valid = false;
+    let msg = "";
+
+    switch (currentPose) {
+        case 'victory':
+            valid = (lWrist.y < nose.y && rWrist.y < nose.y);
+            msg = valid ? "VICTORIOUS!" : "Raise arms above head!";
+            break;
+
+        case 'wonder_woman':
+        case 'superman':
+        case 'gladiator':
+            valid = (Math.abs(lWrist.y - lHip.y) < 0.15 &&
+                     Math.abs(rWrist.y - rHip.y) < 0.15);
+            msg = valid ? "STRONG!" : "Place hands on hips!";
+            break;
+
+        case 'ceo':
+            valid = (lWrist.y < lShoulder.y && rWrist.y < rShoulder.y);
+            msg = valid ? "DOMINANT!" : "Hands behind head!";
+            break;
+
+        case 'thinker':
+            valid = (lWrist.y < nose.y || rWrist.y < nose.y);
+            msg = valid ? "THOUGHTFUL!" : "Touch your chin!";
+            break;
+
+        case 'performer':
+            valid = (Math.abs(lWrist.x - rWrist.x) > 0.6);
+            msg = valid ? "OPEN!" : "Spread arms wider!";
+            break;
+
+        default:
+            valid = true;
+            msg = "Keep adjusting posture...";
+    }
+
+    isCorrect = valid;
+    feedbackBox.innerText = msg;
+    feedbackBox.className = `feedback-box ${valid ? 'correct' : 'incorrect'}`;
+}
+
+function sendPostureData() {
+    let postureScore = Math.round((correctTime / totalTime) * 100);
+    let history = JSON.parse(localStorage.getItem("sessionHistory")) || [];
+
+history.push({
+    fluency: 70,
+    posture: postureScore,
+    star: 60
+});
+
+localStorage.setItem("sessionHistory", JSON.stringify(history));
+    fetch("/get_progress")
+    .then(res => res.json())
+    .then(prev => {
+
+        let fluencyScore = 70; // default
+
+        if (prev.current) {
+            fluencyScore = prev.current.fluency;  // ✅ KEEP OLD VALUE
+        }
+
+        return fetch("/save_session", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                fluency: fluencyScore,
+                posture: postureScore
+            })
+        });
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error(err));
+}
+function startDrill() {
+    if (!currentPose) {
+        alert("Please select a pose first!");
+        return;
+    }
+
+    isRunning = true;
+    timeLeft = 60;
+
+    startBtn.disabled = true;
+
+    timer = setInterval(() => {
+        timeLeft--;
+
+        let secs = timeLeft % 60;
+        document.getElementById('timer').innerText =
+            `00:${secs.toString().padStart(2, '0')}`;
+
+        if (!isCorrect) {
+            feedbackBox.innerText = "⚠️ Adjust your posture";
+            feedbackBox.className = "feedback-box incorrect";
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            sendPostureData();
+            showModal();
+        }
+    }, 1000);
+}
+
+function showModal() {
+    document.getElementById('completionModal').classList.remove('hidden');
+}
+
+function goToDashboard() {
+    window.location.href = "dashboard.html";
+}
+function sendSessionData() {
+    const data = {
+        fluency: 70,   // you can later make dynamic
+        posture: isCorrect ? 80 : 50
+    };
+
+    fetch("/save_session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    });
+}
+</script>
+
+</body>
+</html>

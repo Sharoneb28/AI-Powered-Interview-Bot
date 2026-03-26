@@ -2,49 +2,113 @@
 <html>
 <head>
 <title>Select Domain</title>
-<link rel="stylesheet" href="css/style.css">
+
+<style>
+body{
+    font-family: Arial;
+    background:#eef2ff;
+    padding:40px;
+    text-align:center;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+    margin:30px 0;
+}
+
+.card{
+    padding:20px;
+    background:white;
+    border-radius:12px;
+    cursor:pointer;
+    border:2px solid transparent;
+}
+
+.card:hover{
+    border:2px solid #4f46e5;
+}
+
+.selected{
+    background:#4f46e5;
+    color:white;
+}
+
+button{
+    margin-top:20px;
+    padding:10px 20px;
+    background:#4f46e5;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+</style>
+
 </head>
+
 <body>
 
 <div class="container">
-<div class="card">
 
 <h2>Select Domain</h2>
 
-<div class="grid-3">
+<div class="grid">
 
-<div class="domain-card" data-domain="Software">Software</div>
-<div class="domain-card" data-domain="Data Science">Data Science</div>
-<div class="domain-card" data-domain="Web">Web</div>
-<div class="domain-card" data-domain="Mobile">Mobile</div>
-<div class="domain-card" data-domain="DevOps">DevOps</div>
-<div class="domain-card" data-domain="Cyber">Cybersecurity</div>
-
-</div>
-
-<button id="saveBtn" class="btn-primary full">Save</button>
+<div class="card" onclick="selectDomain(this,'Software')">Software</div>
+<div class="card" onclick="selectDomain(this,'Data Science')">Data Science</div>
+<div class="card" onclick="selectDomain(this,'Web')">Web</div>
+<div class="card" onclick="selectDomain(this,'Mobile')">Mobile</div>
+<div class="card" onclick="selectDomain(this,'DevOps')">DevOps</div>
+<div class="card" onclick="selectDomain(this,'Cybersecurity')">Cybersecurity</div>
 
 </div>
+
+<button onclick="saveDomain()">Save & Start</button>
+
 </div>
 
 <script>
-let selected=null;
 
-const cards=document.querySelectorAll(".domain-card");
+let selectedDomain = null;
 
-cards.forEach(card=>{
-card.addEventListener("click",function(){
-cards.forEach(c=>c.classList.remove("active"));
-this.classList.add("active");
-selected=this.dataset.domain;
-});
-});
+function selectDomain(element, domain){
 
-document.getElementById("saveBtn").onclick=function(){
-if(!selected){alert("Select domain");return;}
-localStorage.setItem("domain",selected);
-window.location.href="interview.html";
-};
+    // remove previous selection
+    document.querySelectorAll(".card").forEach(c=>{
+        c.classList.remove("selected");
+    });
+
+    // highlight selected
+    element.classList.add("selected");
+
+    selectedDomain = domain;
+
+    console.log("Selected:", domain);
+}
+
+function saveDomain(){
+
+    if(!selectedDomain){
+        alert("Please select a domain!");
+        return;
+    }
+
+    // 🔥 SAVE DOMAIN
+    localStorage.setItem("domain", selectedDomain);
+
+    console.log("Saved Domain:", selectedDomain);
+
+    // go to interview
+    window.location.href = "interview.html";
+}
+
 </script>
 
 </body>

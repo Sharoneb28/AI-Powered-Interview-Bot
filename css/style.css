@@ -185,3 +185,24 @@ video{
     from { transform:scale(1.05); }
     to { transform:scale(1.12); }
 }
+/* ============================= */
+/* TASK PAGE */
+/* ============================= */
+
+.title{
+    margin-bottom:20px;
+    font-size:22px;
+    font-weight:600;
+}
+
+.task-card{
+    text-align:center;
+    font-weight:600;
+    cursor:pointer;
+    transition:0.3s;
+}
+
+.task-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 15px 30px rgba(0,0,0,0.1);
+}

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluency & Rapid Fire Round</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --danger: #ef4444;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --text: #1e293b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .card { 
+            background: white; 
+            padding: 40px; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%; 
+            max-width: 550px; 
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        h2 { font-weight: 800; font-size: 1.5rem; margin-bottom: 24px; color: #0f172a; }
+
+        .topic-container {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary);
+            text-align: left;
+        }
+
+        .btn-main { 
+            background: linear-gradient(135deg, var(--danger) 0%, #b91c1c 100%); 
+            color: white; 
+            padding: 16px 32px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: 700; 
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-main:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .btn-secondary { 
+            background: transparent; 
+            color: #64748b; 
+            padding: 8px 16px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        #timer-display { 
+            font-size: 64px; 
+            color: var(--danger); 
+            font-weight: 800; 
+            margin: 10px 0;
+            animation: pulse 1s infinite alternate; 
+        }
+
+        @keyframes pulse {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        #visualizer-container { display: none; justify-content: center; align-items: center; gap: 4px; height: 30px; margin: 15px 0; }
+        .bar { width: 4px; height: 8px; background: var(--primary); border-radius: 2px; animation: bounce 1s ease-in-out infinite; }
+        .bar:nth-child(2) { animation-delay: 0.1s; }
+        .bar:nth-child(3) { animation-delay: 0.2s; }
+        .bar:nth-child(4) { animation-delay: 0.3s; }
+        .bar:nth-child(5) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 100% { height: 8px; } 50% { height: 25px; } }
+
+        #transcript { 
+            background: #ffffff;
+            border: 1px solid #e2e8f0; 
+            padding: 24px; 
+            min-height: 120px; 
+            margin: 25px 0; 
+            border-radius: 16px; 
+            font-size: 1.1rem;
+            color: #475569;
+            line-height: 1.7;
+            box-shadow: inset 0 2px 4px 0 rgba(0,0,0,0.05);
+        }
+
+        .filler { 
+            color: var(--danger); 
+            background: rgba(239, 68, 68, 0.1);
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .stats-badge {
+            display: inline-block;
+            background: #1e293b;
+            color: white;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-text { animation: slideUp 0.6s ease forwards; }
+
+        /* Modern Modal Styling */
+        #resultsModal {
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: rgba(15,23,42,0.8); 
+            backdrop-filter: blur(8px); 
+            z-index: 1000; 
+            align-items: center; 
+            justify-content: center; 
+            opacity: 0; 
+            transition: opacity 0.4s ease;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>🗣️ Fluency Challenge</h2>
+    
+    <div class="topic-container">
+        <span style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">Current Topic</span>
+        <p id="topic-text" style="margin: 8px 0 0 0; font-weight: 600; font-size: 1.1rem;">Press "Next Topic" to load a challenge.</p>
+    </div>
+
+    <div id="progress-container" style="display: none; width: 100%; background: #e2e8f0; height: 8px; border-radius: 10px; margin: 20px 0; overflow: hidden;">
+        <div id="progress-bar" style="width: 100%; height: 100%; background: var(--success); transition: width 1s linear;"></div>
+    </div>
+
+    <div id="timer-display" style="display: none;">30s</div>
+
+    <div id="visualizer-container">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    </div>
+
+    <button class="btn-main" id="start-btn" onclick="initRapidFire()">Start Rapid Fire</button>
+    <br>
+    <button class="btn-secondary" onclick="generateNewTopic()">Next Topic ↻</button>
+
+    <div id="transcript">Your speech will appear here...</div>
+    
+    <div class="stats-badge" id="count-display">Filler Words: 0</div>
+    <a href="dashboard.html" style="display: block; margin-top: 25px; text-decoration: none; color: var(--primary); font-weight: 600; font-size: 0.9rem;">
+    ← Return to Dashboard</a>
+    
+</div>
+
+<div id="resultsModal">
+    <div style="background:white; width:90%; max-width:400px; padding:40px; border-radius:32px; text-align:center; transform:scale(0.8); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);" id="modalContent">
+        <div style="font-size: 64px; margin-bottom: 20px;">🎯</div>
+        <h2 style="margin:0; font-size:24px; color:#0f172a; font-weight: 800;">Session Complete!</h2>
+        
+        <div style="margin:24px 0;">
+            <p style="color:#64748b; margin:0; font-size:12px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Filler Word Count</p>
+            <h1 id="finalFillerCount" style="font-size:72px; margin:0; color:var(--primary); font-weight: 800;">0</h1>
+        </div>
+
+        <p id="improvementMessage" style="color:#475569; line-height:1.6; margin-bottom:30px; font-size: 0.95rem;"></p>
+        
+        <button onclick="closeModal()" style="width:100%; background:#1e293b; color:white; border:none; padding:18px; border-radius:14px; font-weight:700; cursor:pointer; transition:0.2s; font-size: 1rem;">
+            Keep Improving
+        </button>
+    </div>
+</div>
+
+<script>
+const interviewTopics = [
+    "Describe your favorite project in 30 seconds.",
+    "Tell me about a time you worked in a team.",
+    "What are your greatest professional strengths?",
+    "Why should we hire you for this AI project?",
+    "Describe a difficult challenge you overcame.",
+    "Where do you see yourself in five years?",
+    "How do you handle stress or tight deadlines?",
+    "Tell me about yourself and your background in 30 seconds."
+];
+
+let recognition = null;
+let timerInterval;
+let timeLeft = 30;
+let globalTranscript = "";
+
+// ✅ Initialize speech recognition ONCE
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+                globalTranscript += event.results[i][0].transcript + " ";
+            } else {
+                interimTranscript += event.results[i][0].transcript;
+            }
+        }
+
+        processSpeech(globalTranscript + interimTranscript);
+    };
+
+    recognition.onerror = (e) => {
+        console.error("Speech Error:", e.error);
+        if (e.error === "not-allowed") {
+            alert("Please allow microphone access.");
+        }
+    };
+}
+
+// ✅ SINGLE clean function
+function processSpeech(text) {
+    const fillerList = ["um", "uh", "uhm", "umm", "like", "actually", "basically", "so"];
+    let count = 0;
+
+    const words = text.split(/\s+/).map(word => {
+        const cleanWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, "");
+        if (fillerList.includes(cleanWord)) {
+            count++;
+            return `<span class="filler">${word}</span>`;
+        }
+        return word;
+    });
+
+    document.getElementById('transcript').innerHTML = words.join(" ");
+    document.getElementById('count-display').innerText = "Filler Words: " + count;
+}
+
+function initRapidFire() {
+    if (!SpeechRecognition) {
+        alert("Speech Recognition not supported in this browser.");
+        return;
+    }
+
+    globalTranscript = "";
+    timeLeft = 30;
+
+    document.getElementById('progress-container').style.display = 'block';
+    document.getElementById('timer-display').style.display = 'block';
+    document.getElementById('visualizer-container').style.display = 'flex';
+
+    const startBtn = document.getElementById('start-btn');
+    startBtn.disabled = true;
+    startBtn.innerText = "Recording...";
+
+    document.getElementById('transcript').innerText = "Speak now...";
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer-display').innerText = timeLeft + "s";
+
+        if (timeLeft <= 0) endChallenge();
+    }, 1000);
+
+    try {
+        recognition.start();
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+function sendSessionData() {
+    let countText = document.getElementById("count-display").innerText;
+    let fillerCount = parseInt(countText.replace(/\D/g, "")) || 0;
+
+    let fluencyScore = Math.max(0, 100 - (fillerCount * 10));
+    let postureScore = 70;
+    let history = JSON.parse(localStorage.getItem("sessionHistory")) || [];
+
+history.push({
+    fluency: fluencyScore,
+    posture: 70,
+    star: 60
+});
+
+localStorage.setItem("sessionHistory", JSON.stringify(history));
+
+    fetch("/save_session", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            fluency: fluencyScore,
+            posture: postureScore
+        })
+    })
+    .then(res => res.json())
+    .then(data => console.log("Saved:", data))
+    .catch(err => console.error("Error:", err));
+}
+
+function endChallenge() {
+    clearInterval(timerInterval);
+    if (recognition) recognition.stop();
+    sendSessionData();
+
+    document.getElementById('timer-display').style.display = 'none';
+    document.getElementById('progress-container').style.display = 'none';
+    document.getElementById('visualizer-container').style.display = 'none';
+
+    const startBtn = document.getElementById('start-btn');
+    startBtn.disabled = false;
+    startBtn.innerText = "Start Rapid Fire";
+}
+
+function generateNewTopic() {
+    const randomIndex = Math.floor(Math.random() * interviewTopics.length);
+    document.getElementById('topic-text').innerText = interviewTopics[randomIndex];
+}
+
+window.onload = generateNewTopic;
+</script>
+</body>
+</html>

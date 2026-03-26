@@ -8,20 +8,81 @@
 
 <div class="container">
 <div class="card">
+
 <h2>Upload Resume (Optional)</h2>
 
-<input type="file">
+<input type="file" id="resumeFile">
 
-<button class="btn-light" onclick="goNext()">Skip</button>
-<button class="btn-primary" onclick="goNext()">Continue</button>
+<!-- ✅ Separate buttons -->
+<button class="btn-light" onclick="skipResume()">Skip</button>
+<button class="btn-primary" onclick="uploadResume()">Continue</button>
 
 </div>
 </div>
 
 <script>
-function goNext(){
-    window.location.href="domain.html";
+
+// ==============================
+// SKIP RESUME
+// ==============================
+async function skipResume(){
+
+    console.log("Skipping resume...");
+
+    try{
+        await fetch("http://127.0.0.1:5000/skip_resume", {
+            method: "POST"
+        });
+    }catch(err){
+        console.error("Skip error:", err);
+    }
+
+    // 👉 Go to domain selection
+    window.location.href = "domain.html";
 }
+
+// ==============================
+// UPLOAD RESUME
+// ==============================
+async function uploadResume(){
+
+    let file = document.getElementById("resumeFile").files[0];
+    let domain = localStorage.getItem("domain") || "Software";
+
+    if(!file){
+        alert("Please upload a resume or click Skip");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("resume", file);
+    formData.append("domain", domain);
+
+    try{
+        let res = await fetch("http://127.0.0.1:5000/upload_resume", {
+            method:"POST",
+            body: formData
+        });
+
+        let data = await res.json();
+
+        console.log("Resume processed:", data);
+
+        if(data.error){
+            alert("Error: " + data.error);
+        }else{
+            alert("Resume uploaded successfully");
+        }
+
+    }catch(err){
+        console.error("Upload error:", err);
+        alert("Resume upload failed");
+    }
+
+    // 👉 Go to domain page
+    window.location.href = "domain.html";
+}
+
 </script>
 
 </body>

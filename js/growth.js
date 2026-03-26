@@ -1,23 +1,56 @@
-let sessions=JSON.parse(localStorage.getItem("sessions"))||[];
+document.addEventListener("DOMContentLoaded", () => {
 
-let current=sessions[sessions.length-1]||0;
-let previous=sessions[sessions.length-2]||0;
+    let statsData = JSON.parse(localStorage.getItem("statsData")) || {
+        labels: ["Eye Contact", "Fluency", "Confidence", "Posture", "STAR"],
+        previous: [50,50,50,50,50],
+        current: [70,60,80,60,50]
+    };
 
-document.getElementById("currentScore").innerText=current+"%";
-document.getElementById("previousScore").innerText=previous+"%";
-document.getElementById("improvement").innerText=(current-previous)+"%";
+    // UI Update
+    document.getElementById("fluency").innerText =
+        "Fluency: " + statsData.current[1] + "%";
 
-new Chart(document.getElementById("chart"),{
-type:'line',
-data:{
-labels:sessions.map((_,i)=>"Session "+(i+1)),
-datasets:[{
-label:'Confidence Score',
-data:sessions,
-borderColor:'#3b82f6',
-backgroundColor:'rgba(59,130,246,0.2)',
-fill:true
-}]
-},
-options:{scales:{y:{beginAtZero:true,max:100}}}
+    document.getElementById("posture").innerText =
+        "Posture: " + statsData.current[3] + "%";
+
+    document.getElementById("confidence").innerText =
+        "Confidence: " + statsData.current[2] + "%";
+
+    // Chart
+    new Chart(document.getElementById("chart"), {
+        type: "radar",
+        data: {
+            labels: statsData.labels,
+            datasets: [
+                {
+                    label: "Previous",
+                    data: statsData.previous,
+                    borderWidth:2
+                },
+                {
+                    label: "Current",
+                    data: statsData.current,
+                    borderWidth:2
+                }
+            ]
+        },
+        options: {
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
 });
+
+// Navigation
+function goTask(page){
+    window.location.href = "./" + page;
+}
+
+function goDashboard(){
+    window.location.href = "./dashboard.html";
+}
